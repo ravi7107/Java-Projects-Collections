@@ -1,0 +1,46 @@
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.8.6-openjdk-11'  // Using official Maven image with JDK 11
+            args '-v $HOME/.m2:/root/.m2'   // Optional: Cache Maven dependencies
+        }
+    }
+    
+    environment {
+        REPO_URL = 'https://github.com/ravi7107/Java-Projects-Collections.git'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: "${REPO_URL}",
+                    credentialsId: ''  // Add your credentials ID if repo is private
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'  // This will create artifacts in target/ directory
+            }
+        }
+        
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Build completed - cleaning up workspace'
+        }
+        success {
+            echo 'Artifacts successfully built and archived!'
+        }
+        failure {
+            echo 'Build failed - check logs for details'
+        }
+    }
+}
